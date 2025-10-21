@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ type MarketDataService struct {
 	apiKey     string
 	httpClient *http.Client
 	cache      map[string]*CachedPrice
+	db         *sql.DB
 }
 
 // CachedPrice stores a price with timestamp
@@ -35,7 +37,7 @@ type CachedPrice struct {
 }
 
 // NewMarketDataService creates a new market data service
-func NewMarketDataService() *MarketDataService {
+func NewMarketDataService(db *sql.DB) *MarketDataService {
 	// Check which provider to use
 	provider := os.Getenv("MARKET_DATA_PROVIDER")
 	if provider == "" {
@@ -54,41 +56,62 @@ func NewMarketDataService() *MarketDataService {
 			Timeout: 10 * time.Second,
 		},
 		cache: make(map[string]*CachedPrice),
+		db:    db,
 	}
 }
 
 // GetStockPrice fetches the current price for a stock symbol
+// It first checks the database cache, and only fetches from API if cache is older than 1 hour
 func (s *MarketDataService) GetStockPrice(symbol string) (float64, error) {
 	symbol = strings.ToUpper(strings.TrimSpace(symbol))
 
-	// Check cache (valid for 5 minutes)
-	if cached, ok := s.cache[symbol]; ok {
-		if time.Since(cached.Timestamp) < 5*time.Minute {
-			return cached.Price, nil
+	// Check database cache first (valid for 1 hour)
+	var price float64
+	var lastUpdated time.Time
+	checkQuery := `SELECT price, last_updated FROM stock_prices WHERE symbol = $1`
+	err := s.db.QueryRow(checkQuery, symbol).Scan(&price, &lastUpdated)
+
+	if err == nil {
+		// Found in cache, check if still valid
+		if time.Since(lastUpdated) < 60*time.Minute {
+			fmt.Printf("[MarketData] Using DB cached price for %s: %.2f (age: %v)\n", symbol, price, time.Since(lastUpdated))
+			return price, nil
 		}
+		fmt.Printf("[MarketData] DB cache expired for %s (age: %v), fetching fresh data\n", symbol, time.Since(lastUpdated))
+	} else if err != sql.ErrNoRows {
+		// Database error (not just "no rows"), log it but continue
+		fmt.Printf("[MarketData] DB cache check error for %s: %v\n", symbol, err)
 	}
 
-	var price float64
-	var err error
-
-	// Fetch based on provider
+	// Fetch from API
+	var fetchErr error
 	switch s.provider {
 	case ProviderYahooFinance:
-		price, err = s.getYahooFinancePrice(symbol)
+		price, fetchErr = s.getYahooFinancePrice(symbol)
 	case ProviderAlphaVantage:
-		price, err = s.getAlphaVantagePrice(symbol)
+		price, fetchErr = s.getAlphaVantagePrice(symbol)
 	default:
-		price, err = s.getYahooFinancePrice(symbol)
+		price, fetchErr = s.getYahooFinancePrice(symbol)
 	}
 
+	if fetchErr != nil {
+		return 0, fetchErr
+	}
+
+	// Store in database cache
+	upsertQuery := `
+		INSERT INTO stock_prices (symbol, price, last_updated, created_at)
+		VALUES ($1, $2, $3, $3)
+		ON CONFLICT (symbol) 
+		DO UPDATE SET price = $2, last_updated = $3
+	`
+	now := time.Now()
+	_, err = s.db.Exec(upsertQuery, symbol, price, now)
 	if err != nil {
-		return 0, err
-	}
-
-	// Cache the result
-	s.cache[symbol] = &CachedPrice{
-		Price:     price,
-		Timestamp: time.Now(),
+		fmt.Printf("[MarketData] Failed to cache price in DB for %s: %v\n", symbol, err)
+		// Don't fail the request if caching fails
+	} else {
+		fmt.Printf("[MarketData] Cached %s price in DB: %.2f\n", symbol, price)
 	}
 
 	return price, nil
@@ -232,11 +255,29 @@ func IsStockSymbol(name string) bool {
 func (s *MarketDataService) GetCurrentValue(assetType, name string, storedValue float64, source string) (float64, error) {
 	// Only fetch for stocks with market_api source
 	if assetType == "stock" && source == "market_api" && IsStockSymbol(name) {
+		fmt.Printf("[MarketData] Fetching real-time price for %s (stored: %.2f)\n", name, storedValue)
 		price, err := s.GetStockPrice(name)
 		if err != nil {
 			// If API fails, fall back to stored value
+			fmt.Printf("[MarketData] ERROR fetching %s: %v - using stored value\n", name, err)
 			return storedValue, nil
 		}
+		fmt.Printf("[MarketData] Successfully fetched %s: %.2f\n", name, price)
+
+		// Update all assets with this stock symbol in the database
+		updateQuery := `
+			UPDATE assets 
+			SET current_value = $1, updated_at = $2 
+			WHERE name = $3 AND type = 'stock' AND source = 'market_api'
+		`
+		result, err := s.db.Exec(updateQuery, price, time.Now(), name)
+		if err != nil {
+			fmt.Printf("[MarketData] Failed to update assets for %s: %v\n", name, err)
+		} else {
+			rowsAffected, _ := result.RowsAffected()
+			fmt.Printf("[MarketData] Updated %d asset(s) with %s price\n", rowsAffected, name)
+		}
+
 		return price, nil
 	}
 

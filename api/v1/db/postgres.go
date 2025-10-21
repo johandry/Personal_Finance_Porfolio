@@ -88,10 +88,17 @@ func (p *PostgresDB) Migrate() error {
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
+		`CREATE TABLE IF NOT EXISTS stock_prices (
+			symbol VARCHAR(10) PRIMARY KEY,
+			price DECIMAL(15, 2) NOT NULL,
+			last_updated TIMESTAMP NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE INDEX IF NOT EXISTS idx_assets_type ON assets(type)`,
 		`CREATE INDEX IF NOT EXISTS idx_asset_history_asset_id ON asset_history(asset_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_asset_history_date ON asset_history(date)`,
 		`CREATE INDEX IF NOT EXISTS idx_debts_type ON debts(type)`,
+		`CREATE INDEX IF NOT EXISTS idx_stock_prices_symbol ON stock_prices(symbol)`,
 	}
 
 	for _, migration := range migrations {

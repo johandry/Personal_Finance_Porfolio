@@ -6,6 +6,7 @@ let currentEditingDebtId = null;
 function initManage() {
     setupTabs();
     setupModals();
+    setupExportImport();
     loadAssets();
     loadDebts();
 }
@@ -387,6 +388,137 @@ async function deleteDebt(id, name) {
         await api.deleteDebt(id);
         showToast('Debt deleted successfully!', 'success');
         loadDebts();
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+// Setup export/import functionality
+function setupExportImport() {
+    // Assets Export Buttons
+    document.getElementById('exportAssetsJSON').addEventListener('click', () => {
+        window.location.href = `${API_CONFIG.baseURL}/export/assets/json`;
+    });
+
+    document.getElementById('exportAssetsCSV').addEventListener('click', () => {
+        window.location.href = `${API_CONFIG.baseURL}/export/assets/csv`;
+    });
+
+    // Debts Export Buttons
+    document.getElementById('exportDebtsJSON').addEventListener('click', () => {
+        window.location.href = `${API_CONFIG.baseURL}/export/debts/json`;
+    });
+
+    document.getElementById('exportDebtsCSV').addEventListener('click', () => {
+        window.location.href = `${API_CONFIG.baseURL}/export/debts/csv`;
+    });
+
+    // Assets Import Button
+    document.getElementById('importAssetsBtn').addEventListener('click', () => {
+        document.getElementById('importAssetsFile').click();
+    });
+
+    document.getElementById('importAssetsFile').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        if (fileExtension !== 'json' && fileExtension !== 'csv') {
+            showToast('Please select a JSON or CSV file', 'error');
+            return;
+        }
+
+        await importAssets(file, fileExtension);
+        e.target.value = ''; // Reset file input
+    });
+
+    // Debts Import Button
+    document.getElementById('importDebtsBtn').addEventListener('click', () => {
+        document.getElementById('importDebtsFile').click();
+    });
+
+    document.getElementById('importDebtsFile').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        if (fileExtension !== 'json' && fileExtension !== 'csv') {
+            showToast('Please select a JSON or CSV file', 'error');
+            return;
+        }
+
+        await importDebts(file, fileExtension);
+        e.target.value = ''; // Reset file input
+    });
+}
+
+// Import assets from file
+async function importAssets(file, format) {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_CONFIG.baseURL}/import/assets/${format}`, {
+            method: 'POST',
+            body: file,
+            headers: {
+                'Content-Type': format === 'json' ? 'application/json' : 'text/csv',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Import failed');
+        }
+
+        const result = await response.json();
+        
+        let message = `Imported ${result.imported} assets`;
+        if (result.skipped > 0) {
+            message += `, skipped ${result.skipped} duplicates`;
+        }
+        if (result.errors && result.errors.length > 0) {
+            message += `, ${result.errors.length} errors`;
+            console.error('Import errors:', result.errors);
+        }
+
+        showToast(message, result.errors && result.errors.length > 0 ? 'warning' : 'success');
+        loadAssets(); // Reload assets table
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+// Import debts from file
+async function importDebts(file, format) {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_CONFIG.baseURL}/import/debts/${format}`, {
+            method: 'POST',
+            body: file,
+            headers: {
+                'Content-Type': format === 'json' ? 'application/json' : 'text/csv',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Import failed');
+        }
+
+        const result = await response.json();
+        
+        let message = `Imported ${result.imported} debts`;
+        if (result.skipped > 0) {
+            message += `, skipped ${result.skipped} duplicates`;
+        }
+        if (result.errors && result.errors.length > 0) {
+            message += `, ${result.errors.length} errors`;
+            console.error('Import errors:', result.errors);
+        }
+
+        showToast(message, result.errors && result.errors.length > 0 ? 'warning' : 'success');
+        loadDebts(); // Reload debts table
     } catch (error) {
         handleError(error);
     }

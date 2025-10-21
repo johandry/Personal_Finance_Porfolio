@@ -138,6 +138,8 @@ func (h *AssetHandler) ListAssets(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				asset.CurrentValue = currentPrice
 			}
+			// Small delay to avoid rate limiting (100ms between requests)
+			time.Sleep(100 * time.Millisecond)
 			// If error, keep the stored value
 		}
 

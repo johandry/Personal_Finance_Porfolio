@@ -33,7 +33,13 @@
         <div id="assets-tab" class="tab-content active">
             <div class="action-bar">
                 <button class="btn btn-primary" id="addAssetBtn">+ Add New Asset</button>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="exportAssetsJSON">📥 Export JSON</button>
+                    <button class="btn btn-secondary" id="exportAssetsCSV">📥 Export CSV</button>
+                    <button class="btn btn-secondary" id="importAssetsBtn">📤 Import</button>
+                </div>
             </div>
+            <input type="file" id="importAssetsFile" accept=".json,.csv" class="hidden-file-input" aria-label="Import assets file">
 
             <div class="card">
                 <div class="table-responsive">
@@ -65,7 +71,13 @@
         <div id="debts-tab" class="tab-content">
             <div class="action-bar">
                 <button class="btn btn-primary" id="addDebtBtn">+ Add New Debt</button>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="exportDebtsJSON">📥 Export JSON</button>
+                    <button class="btn btn-secondary" id="exportDebtsCSV">📥 Export CSV</button>
+                    <button class="btn btn-secondary" id="importDebtsBtn">📤 Import</button>
+                </div>
             </div>
+            <input type="file" id="importDebtsFile" accept=".json,.csv" class="hidden-file-input" aria-label="Import debts file">
 
             <div class="card">
                 <div class="table-responsive">

@@ -6,12 +6,31 @@ const API_CONFIG = {
 
 // Format currency
 function formatCurrency(amount, currency = 'USD') {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(amount);
+    // Validate currency code
+    if (!currency || currency.trim() === '') {
+        currency = 'USD';
+    }
+    
+    // Ensure currency is a string and uppercase
+    currency = String(currency).toUpperCase().trim();
+    
+    try {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(amount);
+    } catch (e) {
+        // Fallback if currency code is invalid
+        console.warn(`Invalid currency code: ${currency}, using USD as fallback`);
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(amount);
+    }
 }
 
 // Format date

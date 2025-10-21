@@ -37,8 +37,8 @@ func main() {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	// Initialize market data service
-	marketDataService := services.NewMarketDataService()
+	// Initialize market data service with database connection
+	marketDataService := services.NewMarketDataService(database.DB)
 	provider := os.Getenv("MARKET_DATA_PROVIDER")
 	if provider == "" {
 		provider = string(services.DefaultMarketDataProvider)
@@ -49,6 +49,7 @@ func main() {
 	assetHandler := handlers.NewAssetHandler(database, marketDataService)
 	debtHandler := handlers.NewDebtHandler(database)
 	summaryHandler := handlers.NewSummaryHandler(database, marketDataService)
+	exportHandler := handlers.NewExportHandler(database)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -101,6 +102,23 @@ func main() {
 		// Summary
 		r.Get("/networth", summaryHandler.GetNetWorth)
 		r.Get("/summary", summaryHandler.GetSummary)
+
+		// Export endpoints
+		r.Route("/export", func(r chi.Router) {
+			r.Get("/assets/json", exportHandler.ExportAssetsJSON)
+			r.Get("/assets/csv", exportHandler.ExportAssetsCSV)
+			r.Get("/debts/json", exportHandler.ExportDebtsJSON)
+			r.Get("/debts/csv", exportHandler.ExportDebtsCSV)
+			r.Get("/all", exportHandler.ExportAll)
+		})
+
+		// Import endpoints
+		r.Route("/import", func(r chi.Router) {
+			r.Post("/assets/json", exportHandler.ImportAssetsJSON)
+			r.Post("/assets/csv", exportHandler.ImportAssetsCSV)
+			r.Post("/debts/json", exportHandler.ImportDebtsJSON)
+			r.Post("/debts/csv", exportHandler.ImportDebtsCSV)
+		})
 	})
 
 	// Get port from environment or use default

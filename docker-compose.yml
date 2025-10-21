@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:alpine
     container_name: finance_postgres
     environment:
       POSTGRES_USER: financeuser
@@ -21,6 +21,7 @@ services:
   api:
     build:
       dockerfile: Dockerfile
+    image: finance_api
     container_name: finance_api
     environment:
       DB_HOST: postgres

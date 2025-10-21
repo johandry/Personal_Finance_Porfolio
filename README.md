@@ -5,11 +5,12 @@
 ## 📋 Features
 
 - **Asset Management:** Track stocks, properties, cars, cash, and investments
-- **Real-Time Stock Prices:** 📈 Automatic fetching from Yahoo Finance or Alpha Vantage API
+- **Real-Time Stock Prices:** 📈 Automatic fetching from Yahoo Finance / Alpha Vantage
 - **Debt Tracking:** Monitor credit cards, loans, mortgages, and other debts
 - **Historical Tracking:** Store and view daily asset values
 - **Net Worth Calculation:** Automatic aggregation of assets minus debts
 - **Profit/Loss Analysis:** Daily delta and cumulative returns with real-time prices
+- **Export/Import:** 📥📤 Backup and restore data in JSON or CSV format
 - **Interactive Dashboard:** Beautiful charts and visualizations
 - **CRUD Interface:** Easy-to-use web interface for managing finances
 - **RESTful API:** Built with Go for high performance
@@ -185,6 +186,20 @@ curl -X POST http://localhost:8080/api/v1/assets \
 |--------|----------|-------------|
 | GET | `/api/v1/networth` | Get total net worth |
 | GET | `/api/v1/summary` | Get daily summary with P/L |
+
+### Export/Import
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/export/assets/json` | Export assets as JSON |
+| GET | `/api/v1/export/assets/csv` | Export assets as CSV |
+| GET | `/api/v1/export/debts/json` | Export debts as JSON |
+| GET | `/api/v1/export/debts/csv` | Export debts as CSV |
+| GET | `/api/v1/export/all` | Export everything as JSON |
+| POST | `/api/v1/import/assets/json` | Import assets from JSON |
+| POST | `/api/v1/import/assets/csv` | Import assets from CSV |
+| POST | `/api/v1/import/debts/json` | Import debts from JSON |
+| POST | `/api/v1/import/debts/csv` | Import debts from CSV |
 
 ## 🔧 Development
 
