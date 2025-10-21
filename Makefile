@@ -44,6 +44,12 @@ build:
 	go build -o bin/finance-api .
 	@echo "✅ Build complete! Binary at: bin/finance-api"
 
+# Build the Docker image for the API
+build-docker:
+	@echo "🔨 Building API Docker image..."
+	docker-compose build api
+	@echo "✅ Docker image built!"
+
 # Restart all services
 restart:
 	@echo "🔄 Restarting services..."
@@ -80,26 +86,40 @@ test:
 	go test ./... -v
 	@echo "✅ Tests complete!"
 
+# Start PostgreSQL database for local development
 dev-db:
 	@echo "🐘 Starting PostgreSQL database..."
 	docker-compose up -d postgres
 	@echo "✅ Database started! Accessible at localhost:5432"
 
-# Run API locally (for development)
-dev-api:
+# Run API locally for development
+dev-api: dev-stop dev-db
 	@echo "🏃 Running API locally..."
-	DB_HOST=localhost go run main.go
+	@sleep 3 # Wait for DB to be ready
+	DB_HOST=localhost go run main.go || true
 
-# Serve frontend locally with Python
-dev-web:
+# Serve frontend locally with Python for development 
+dev-web: dev-api
 	@echo "🌐 Starting local web server..."
 	@echo "Frontend available at: http://localhost:3000"
 	cd web && python3 -m http.server 3000
 
-dev: dev-db dev-api dev-web
-	@echo "✅ Development environment started!"
-	@echo "Press Ctrl+C to stop."
-	@wait
+# Stop database
+dev-stop:
+	@echo "🛑 Stopping database..."
+	docker-compose down
+	@echo "🛑 Stopping API..."
+	@pkill -f "go run main.go" || true
+	@echo "🛑 Stopping web server..."
+	@pkill -f "python3 -m http.server" || true
+	@echo "✅ Development environment stopped!"
+
+# Purge development data
+dev-purge: dev-stop
+	@echo "🧹 Purging development data..."
+	docker-compose down -v
+	docker rmi finance_api || true
+	@echo "✅ Development data purged!"
 
 # Run database migrations manually
 migrate:
