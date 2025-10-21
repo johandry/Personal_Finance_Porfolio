@@ -16,6 +16,7 @@ import (
 
 	"personal-finance/api/v1/db"
 	"personal-finance/api/v1/handlers"
+	"personal-finance/api/v1/services"
 )
 
 func main() {
@@ -36,10 +37,18 @@ func main() {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
+	// Initialize market data service
+	marketDataService := services.NewMarketDataService()
+	provider := os.Getenv("MARKET_DATA_PROVIDER")
+	if provider == "" {
+		provider = string(services.DefaultMarketDataProvider)
+	}
+	log.Printf("Market data service initialized (provider: %s)", provider)
+
 	// Initialize handlers
-	assetHandler := handlers.NewAssetHandler(database)
+	assetHandler := handlers.NewAssetHandler(database, marketDataService)
 	debtHandler := handlers.NewDebtHandler(database)
-	summaryHandler := handlers.NewSummaryHandler(database)
+	summaryHandler := handlers.NewSummaryHandler(database, marketDataService)
 
 	// Setup router
 	r := chi.NewRouter()

@@ -53,6 +53,27 @@ function setupModals() {
 
     assetForm.addEventListener('submit', handleAssetSubmit);
 
+    // Listen for changes in asset type and source to hide/show current value
+    const assetType = document.getElementById('assetType');
+    const assetSource = document.getElementById('assetSource');
+    const currentValueField = document.getElementById('assetCurrentValue').closest('.form-group');
+
+    function toggleCurrentValueField() {
+        const type = assetType.value;
+        const source = assetSource.value;
+        
+        // Hide current value for stocks with market_api source
+        if (type === 'stock' && source === 'market_api') {
+            currentValueField.style.display = 'none';
+            document.getElementById('assetCurrentValue').removeAttribute('required');
+        } else {
+            currentValueField.style.display = 'block';
+        }
+    }
+
+    assetType.addEventListener('change', toggleCurrentValueField);
+    assetSource.addEventListener('change', toggleCurrentValueField);
+
     // Debt modal
     const debtModal = document.getElementById('debtModal');
     const addDebtBtn = document.getElementById('addDebtBtn');
@@ -115,6 +136,13 @@ function openAssetModal(asset = null) {
         document.getElementById('assetPurchaseDate').value = new Date().toISOString().split('T')[0];
     }
 
+    // Trigger field visibility update
+    const typeField = document.getElementById('assetType');
+    const sourceField = document.getElementById('assetSource');
+    if (typeField && sourceField) {
+        typeField.dispatchEvent(new Event('change'));
+    }
+
     modal.classList.add('active');
 }
 
@@ -157,18 +185,22 @@ function closeModal(modal) {
 async function handleAssetSubmit(event) {
     event.preventDefault();
 
+    const assetType = document.getElementById('assetType').value;
+    const assetSource = document.getElementById('assetSource').value;
+
     const data = {
         name: document.getElementById('assetName').value,
-        type: document.getElementById('assetType').value,
+        type: assetType,
         buy_price: parseFloat(document.getElementById('assetBuyPrice').value),
         quantity: parseFloat(document.getElementById('assetQuantity').value),
         currency: document.getElementById('assetCurrency').value,
         purchase_date: document.getElementById('assetPurchaseDate').value,
-        source: document.getElementById('assetSource').value,
+        source: assetSource,
     };
 
+    // Only include current_value if not a stock with market_api source
     const currentValue = document.getElementById('assetCurrentValue').value;
-    if (currentValue) {
+    if (currentValue && !(assetType === 'stock' && assetSource === 'market_api')) {
         data.current_value = parseFloat(currentValue);
     }
 

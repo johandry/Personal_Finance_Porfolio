@@ -11,16 +11,21 @@ import (
 
 	"personal-finance/api/v1/db"
 	"personal-finance/api/v1/models"
+	"personal-finance/api/v1/services"
 )
 
 // AssetHandler handles asset-related requests
 type AssetHandler struct {
-	db *db.PostgresDB
+	db         *db.PostgresDB
+	marketData *services.MarketDataService
 }
 
 // NewAssetHandler creates a new asset handler
-func NewAssetHandler(database *db.PostgresDB) *AssetHandler {
-	return &AssetHandler{db: database}
+func NewAssetHandler(database *db.PostgresDB, marketDataService *services.MarketDataService) *AssetHandler {
+	return &AssetHandler{
+		db:         database,
+		marketData: marketDataService,
+	}
 }
 
 // CreateAsset handles POST /api/v1/assets
@@ -121,6 +126,21 @@ func (h *AssetHandler) ListAssets(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusInternalServerError, "Failed to parse assets")
 			return
 		}
+
+		// Fetch real-time price for stocks
+		if string(asset.Type) == "stock" && string(asset.Source) == "market_api" {
+			currentPrice, err := h.marketData.GetCurrentValue(
+				string(asset.Type),
+				asset.Name,
+				asset.CurrentValue,
+				string(asset.Source),
+			)
+			if err == nil {
+				asset.CurrentValue = currentPrice
+			}
+			// If error, keep the stored value
+		}
+
 		assets = append(assets, asset)
 	}
 
@@ -152,6 +172,20 @@ func (h *AssetHandler) GetAsset(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to fetch asset")
 		return
+	}
+
+	// Fetch real-time price for stocks
+	if string(asset.Type) == "stock" && string(asset.Source) == "market_api" {
+		currentPrice, err := h.marketData.GetCurrentValue(
+			string(asset.Type),
+			asset.Name,
+			asset.CurrentValue,
+			string(asset.Source),
+		)
+		if err == nil {
+			asset.CurrentValue = currentPrice
+		}
+		// If error, keep the stored value
 	}
 
 	respondWithJSON(w, http.StatusOK, asset)

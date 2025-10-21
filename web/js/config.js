@@ -16,12 +16,34 @@ function formatCurrency(amount, currency = 'USD') {
 
 // Format date
 function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    
     const date = new Date(dateString);
-    return new Intl.DateFormat('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    }).format(date);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
+    // Try using Intl.DateTimeFormat if available
+    if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+        try {
+            return new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            }).format(date);
+        } catch (e) {
+            // Fallback if Intl fails
+        }
+    }
+    
+    // Fallback: Manual formatting
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    
+    return `${month} ${day}, ${year}`;
 }
 
 // Format date for input field

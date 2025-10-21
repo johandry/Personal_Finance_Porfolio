@@ -5,10 +5,11 @@
 ## 📋 Features
 
 - **Asset Management:** Track stocks, properties, cars, cash, and investments
+- **Real-Time Stock Prices:** 📈 Automatic fetching from Yahoo Finance or Alpha Vantage API
 - **Debt Tracking:** Monitor credit cards, loans, mortgages, and other debts
 - **Historical Tracking:** Store and view daily asset values
 - **Net Worth Calculation:** Automatic aggregation of assets minus debts
-- **Profit/Loss Analysis:** Daily delta and cumulative returns
+- **Profit/Loss Analysis:** Daily delta and cumulative returns with real-time prices
 - **Interactive Dashboard:** Beautiful charts and visualizations
 - **CRUD Interface:** Easy-to-use web interface for managing finances
 - **RESTful API:** Built with Go for high performance
@@ -21,6 +22,7 @@
 - **Language:** Go
 - **Framework:** Chi Router
 - **Database:** PostgreSQL
+- **Market Data:** Yahoo Finance (default) / Alpha Vantage (optional)
 
 ### Frontend
 
@@ -88,9 +90,20 @@ git clone git@github.com:johandry/Personal_Finance_Porfolio.git
 cd Personal_Finance_Porfolio
 ```
 
-### 2. Configure Environment
+### 2. Configure Environment (Optional)
 
-Edit api/.env if needed (defaults work with Docker Compose)
+The application uses **Yahoo Finance** by default (free, no API key required).
+
+For production or if you prefer Alpha Vantage, edit `.env`:
+
+```bash
+MARKET_DATA_PROVIDER=alphavantage
+ALPHA_VANTAGE_API_KEY=your_api_key_here
+```
+
+**Get your free API key**: [Alpha Vantage](https://www.alphavantage.co/support/#api-key)
+
+> 💡 **Note**: Yahoo Finance works immediately with no setup. See [Market Data Integration Guide](docs/MARKET_DATA.md) for details.
 
 ### 3. Start the Application
 
@@ -306,11 +319,12 @@ make status     # Service status
 - [x] Net worth calculation
 - [x] Historical tracking
 - [x] Static web frontend (HTML/CSS/JS)
+- [x] Real-time stock price integration (Yahoo Finance or Alpha Vantage)
 
 ### Phase 2 (Future)
 
-- [ ] Market data API integration (Yahoo Finance, Alpha Vantage)
-- [ ] Automated daily valuation updates
+- [x] Market data API integration (Yahoo Finance or Alpha Vantage) ✅
+- [ ] Automated daily valuation updates via cron job
 - [ ] Enhanced data visualizations
 - [ ] Export to CSV/PDF
 - [ ] Mobile app (Flutter)
@@ -323,6 +337,14 @@ make status     # Service status
 ### Phase 3 (Further Future)
 
 - [ ] AI insights & recommendations
+
+## 📚 Documentation
+
+- [Quick Start Guide](docs/QUICKSTART.md) - Get started quickly
+- [Market Data Integration](docs/MARKET_DATA.md) - Stock price API setup
+- [Project Summary](SUMMARY.md) - Complete project overview
+- [UI Guide](docs/UI_GUIDE.md) - Frontend interface documentation
+- [Product Requirements](docs/prd.md) - Original PRD
 
 ## 🤝 Contributing
 
